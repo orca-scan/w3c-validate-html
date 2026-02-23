@@ -8,8 +8,6 @@ Validate HTML offline using the official W3C vnu.jar
 
 **Why?** Modern build tools can introduce HTML bugs. w3c-validate-html runs locally and prints concise, clickable errors with line numbers using the same rules as the online W3C validator.
 
----
-
 ## CLI
 
 The easiest way to use this is from the CLI using `npx`, for example:
@@ -38,8 +36,6 @@ Option        | Alias | Type    | Default            | Description
 --strip-query |       | boolean | false              | Exclude URLs with query strings
 --user-agent  |       | string  | Mozilla/5.0 (node) | Custom user agent for requests
 
----
-
 ## Output
 
 Errors and warnings are printed with clickable file:line:col references for easy navigation in editors. Downloaded HTML is prettified for readability. Exits with code 1 if validation fails.
@@ -53,8 +49,6 @@ Example output:
       End of file seen when expecting text or an end tag. public/invalid.html:9:1
   ✔ public/valid.html
 ```
-
----
 
 ## Node module
 
