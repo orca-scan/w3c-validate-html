@@ -61,3 +61,42 @@ node index.js --target ./public --warnings 1
 ## License
 
 [MIT License](LICENSE) © Orca Scan - a [barcode app](https://orcascan.com) with simple [barcode tracking APIs](https://orcascan.com/guides?tag=for-developers).
+
+## Programmatic Usage
+
+You can use this package as a module to validate a URL, file/folder, or raw HTML string. The exported function auto-detects the input type:
+
+### Validate a URL
+
+```js
+const validate = require('w3c-validate-html');
+
+(async () => {
+  const summary = await validate('https://example.com');
+  console.log(summary);
+})();
+```
+
+### Validate a local file or folder
+
+```js
+const validate = require('w3c-validate-html');
+
+(async () => {
+  const summary = await validate('./index.html');
+  console.log(summary);
+})();
+```
+
+### Validate a raw HTML string
+
+```js
+const validate = require('w3c-validate-html');
+
+(async () => {
+  const html = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hi</h1></body></html>';
+  const result = await validate(html);
+  console.log(result);
+  // { ok: true, errors: [], warnings: [] }
+})();
+```

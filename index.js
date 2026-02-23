@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+'#!/usr/bin/env node'
 'use strict';
 
 var fs = require('fs');
@@ -24,6 +24,34 @@ var JAR_URLS = [
 ];
 
 var urlToFileMap = {};
+
+/**
+ * Main validate entry point
+ * Validate a URL, file/folder, or raw HTML string using vnu.jar
+ * @param {string} input - URL, file/folder path, or HTML string
+ * @param {object} [cfg] - Optional config
+ * @returns {Promise<object>} - Validation result(s)
+ */
+async function validate(input, cfg) {
+
+    cfg = cfg || {};
+
+    if (typeof input !== 'string' || !input.trim()) {
+        throw new Error('Input must be a non-empty string (URL, file, or HTML)');
+    }
+
+    if (isUrl(input)) {
+        return validateUrl(input, cfg);
+    }
+
+    if (isFilePath(input)) {
+        return validateFiles(input, cfg);
+    }
+
+    if (isHtml(input)) {
+        return validateHtmlString(input, cfg);
+    }
+}
 
 /**
  * Checks if Java is installed and available in PATH.
@@ -802,16 +830,107 @@ async function validateFiles(target, cfg) {
 }
 
 /**
- * Main validate entry point
- * @param {string} target - Url or file path
- * @param {object} cfg - Config
- * @returns {Promise<{passed:number,failed:number,results:Array}>} - Summary
+ * Check if a string is raw html
+ * @param {string} str - input string
+ * @returns {boolean} - true if input looks like html
  */
-async function validate(target, cfg) {
-    if (/^https?:\/\//i.test(String(target || ''))) {
-        return validateUrl(target, cfg);
+function isHtml(str) {
+
+    if (typeof str !== 'string') return false;
+
+    var s = str.trim();
+
+    if (!s) return false;
+
+    // Must start with '<' (allow whitespace before)
+    if (s[0] !== '<') return false;
+
+    // Accept: doctype, comment, or any tag (e.g. <html>, <div>, <svg>, <x-foo>, etc)
+    return (
+        /^<(!doctype\b|!--|[a-z][\w:-]*\b)/i.test(s)
+    );
+}
+
+/**
+ * Check if a string is a http or https url
+ * @param {string} str - input string
+ * @returns {boolean} - true if url
+ */
+function isUrl(str) {
+    var s = String(str || '').replace(/^\s+|\s+$/g, '');
+    var u;
+
+    if (!/^https?:\/\//i.test(s)) {
+        return false;
     }
-    return validateFiles(target, cfg);
+
+    u = url.parse(s);
+    return !!(u && (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname);
+}
+
+/**
+ * Check if a string looks like a file or folder path on any os
+ * @param {string} str - input string
+ * @returns {boolean} - true if file path
+ */
+function isFilePath(str) {
+    var s = String(str || '').replace(/^\s+|\s+$/g, '');
+
+    if (!s || isUrl(s) || isHtml(s)) {
+        return false;
+    }
+
+    // abs or explicit relative (posix, windows, unc, tilde)
+    if (/^(?:[a-zA-Z]:[\\/]|\\\\|\/|~[\\/]|\.{1,2}[\\/])/.test(s)) {
+        return true;
+    }
+
+    // contains a separator and not just separators
+    return /[\\/]/.test(s) && /[^\s\\/]/.test(s);
+}
+
+
+/**
+ * Validate a raw HTML string using vnu.jar
+ * @param {string} src - The HTML string to validate
+ * @param {object} [cfg] - Optional config
+ * @returns {Promise<{passed: number, failed: number, results: Array}>} - Validation summary
+ */
+async function validateHtmlString(src, cfg) {
+
+    if (!(await hasJava())) {
+        throw new Error('java not found');
+    }
+
+    if (!CURRENT_JAR_PATH) {
+        CURRENT_JAR_PATH = await resolveJarPath();
+    }
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'w3c-validate-html-str-'));
+    const tmpFile = path.join(tmpDir, 'input.html');
+    await fsp.writeFile(tmpFile, src, 'utf8');
+    const proc = await runOne(tmpFile, cfg);
+    const issues = parseIssues(proc, cfg);
+    const includeWarnings = !cfg.errorsOnly && cfg.warnings > 0;
+    const ok = (issues.errors.length === 0 && (!includeWarnings || issues.warnings.length === 0));
+
+    try {
+        fs.unlinkSync(tmpFile);
+        fs.rmdirSync(tmpDir);
+    }
+    catch (e) { }
+
+    const result = {
+        ok,
+        errors: issues.errors,
+        warnings: issues.warnings
+    };
+
+    return {
+        passed: ok ? 1 : 0,
+        failed: ok ? 0 : 1,
+        results: [result]
+    };
 }
 
 /* cli vs module */
@@ -863,10 +982,10 @@ if (require.main === module) {
         }
         process.exit(summary.failed > 0 ? 1 : 0);
     })
-        .catch(function (err) {
-            console.error(chalk.red('error') + ' ' + (err && err.message ? err.message : String(err)));
-            process.exit(1);
-        });
+    .catch(function (err) {
+        console.error(chalk.red('error') + ' ' + (err && err.message ? err.message : String(err)));
+        process.exit(1);
+    });
 
 } else {
     module.exports = validate;
