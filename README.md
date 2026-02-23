@@ -24,19 +24,19 @@ npx w3c-validate-html --target ./public --errors-only
 
 ### Options
 
-| Option         | Alias | Type    | Default             | Description                                 |
-| -------------- | ----- | ------- | ------------------- | ------------------------------------------- |
-| --url          | -u    | string  |                     | Start URL for website validation            |
-| --target       | -t    | string  |                     | File or folder to validate                  |
-| --depth        |       | number  | 2                   | Crawl depth for website validation          |
-| --concurrency  |       | number  | 4                   | Number of concurrent validations            |
-| --warnings     |       | 0\|1    | 1                   | Show warnings (0 = off, 1 = on)             |
-| --exclude      |       | string  |                     | Comma/space separated URLs to exclude       |
-| --errors-only  | -e    | boolean | false               | Only show errors                            |
-| --json         |       | boolean | false               | Output results as JSON                      |
-| --same-origin  |       | boolean | true                | Restrict crawl to same origin               |
-| --strip-query  |       | boolean | false               | Exclude URLs with query strings             |
-| --user-agent   |       | string  | Mozilla/5.0 (node)  | Custom user agent for requests              |
+Option        | Alias | Type    | Default            | Description
+:-------------|:------|:--------|:-------------------|:-------------------------------------
+--url         | -u    | string  |                    | Start URL for website validation
+--target      | -t    | string  |                    | File or folder to validate
+--depth       |       | number  | 2                  | Crawl depth for website validation
+--concurrency |       | number  | 4                  | Number of concurrent validations
+--warnings    |       | 0\|1    | 1                  | Show warnings (0 = off, 1 = on)
+--exclude     |       | string  |                    | Comma/space separated URLs to exclude
+--errors-only | -e    | boolean | false              | Only show errors
+--json        |       | boolean | false              | Output results as JSON
+--same-origin |       | boolean | true               | Restrict crawl to same origin
+--strip-query |       | boolean | false              | Exclude URLs with query strings
+--user-agent  |       | string  | Mozilla/5.0 (node) | Custom user agent for requests
 
 ---
 
@@ -58,7 +58,7 @@ Example output:
 
 ## Node module
 
-You can use this package as a module to validate a URL, file/folder, or raw HTML string. The exported function auto-detects the input type.
+You can use this package as a module to validate a URL, file/folder, or raw HTML string:
 
 ### Validate a URL
 
