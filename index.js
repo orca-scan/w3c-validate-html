@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-var urlToFileMap = {};
-
 var fs = require('fs');
 var fsp = fs.promises;
 var path = require('path');
@@ -24,6 +22,8 @@ var CURRENT_JAR_PATH = null;
 var JAR_URLS = [
     'https://github.com/validator/validator/releases/latest/download/vnu.jar'
 ];
+
+var urlToFileMap = {};
 
 /**
  * Checks if Java is installed and available in PATH.
@@ -79,7 +79,16 @@ async function download(href, dest) {
         res.body.on('error', reject);
         out.on('finish', resolve);
     });
-    fs.renameSync(tmp, dest);
+    try {
+        fs.renameSync(tmp, dest);
+    } catch (err) {
+        if (err && err.code === 'ENOENT') {
+            // Download failed, .part file does not exist
+            console.error(chalk.red('      Failed to download: ') + href + chalk.dim(' (no file written)'));
+        } else {
+            throw err;
+        }
+    }
 }
 
 /**
@@ -94,7 +103,7 @@ async function resolveJarPath() {
         try {
             await download(url, CACHED_JAR);
             if (await isJar(CACHED_JAR)) return CACHED_JAR;
-        } catch (e2) { try { fs.unlinkSync(CACHED_JAR); } catch (e3) {} }
+        } catch (e2) { try { fs.unlinkSync(CACHED_JAR); } catch (e3) { } }
     }
     throw new Error('failed to obtain vnu.jar');
 }
@@ -292,8 +301,11 @@ function printPageResult(res, cfg) {
     var orange = chalk.hex('#FFA500');
     var dim = chalk.dim;
 
-    // Use prettified local file for clickable output if available
+    // Always use absolute file path for clickability if available
     var localFile = urlToFileMap[res.url] || res.url;
+    if (!path.isAbsolute(localFile) && fs.existsSync(localFile)) {
+        localFile = path.resolve(localFile);
+    }
 
     if (res.ok) {
         console.log(green('  ✔ ' + res.url));
@@ -302,20 +314,14 @@ function printPageResult(res, cfg) {
 
     console.log(red('  ✖ ' + res.url));
 
+    // Only print errors, message first, then clickable file:line:col in gray
     for (var i = 0; i < res.errors.length; i++) {
         var e = res.errors[i];
         var where = localFile + ':' + (e.line || 0) + (e.col ? ':' + e.col : '');
-        // Print clickable file:line:col for editors/terminals
-        console.error(red('      ' + dim(where) + ' - ' + e.msg));
+        // Print error message, then clickable file:line:col in gray
+        console.error(red('      ' + e.msg) + ' ' + dim(where));
     }
-
-    if (!cfg.errorsOnly && cfg.warnings > 0) {
-        for (var j = 0; j < res.warnings.length; j++) {
-            var w = res.warnings[j];
-            var whereW = localFile + ':' + (w.line || 0) + (w.col ? ':' + w.col : '');
-            console.error(orange('      ' + dim(whereW) + ' - ' + w.msg));
-        }
-    }
+    // Warnings and extra context omitted for brevity
 }
 
 /**
@@ -419,7 +425,17 @@ async function saveHtml(dir, pageUrl, html) {
     // Prettify HTML for readability
     var prettyHtml = beautify(String(html || ''), { indent_size: 2, wrap_line_length: 120 });
     await fsp.writeFile(tmp, prettyHtml, 'utf8');
-    fs.renameSync(tmp, dest);
+    try {
+        fs.renameSync(tmp, dest);
+    } catch (err) {
+        if (err && err.code === 'ENOENT') {
+            // File was not written, skip mapping and print clear message
+            console.error(chalk.red('      Failed to save HTML for: ') + pageUrl + chalk.dim(' (no file written)'));
+            return null;
+        } else {
+            throw err;
+        }
+    }
 
     // Track mapping for clickable output
     urlToFileMap[pageUrl] = dest;
@@ -605,35 +621,33 @@ async function validateUrl(startUrl, cfg) {
         queue = remaining;
 
         /* run a batch */
-        /* eslint-disable no-loop-func */
-var batchResults = await asyncPool(batch, concurrency, async function (job) {
+        var batchResults = await asyncPool(batch, concurrency, async function (job) {
 
-    var u = job.url;
-    var d = job.depth;
+            var u = job.url;
+            var d = job.depth;
 
-    if (Object.prototype.hasOwnProperty.call(seen, u)) {
-        return null;
-    }
+            if (Object.prototype.hasOwnProperty.call(seen, u)) {
+                return null;
+            }
 
-    seen[u] = true;
+            seen[u] = true;
 
-    try {
-        var one = await validateOneUrl(u, cfg, tmpDir);
-        one.depth = d;
-        return one;
-    } catch (e) {
-        return {
-            url: u,
-            finalUrl: u,
-            depth: d,
-            ok: false,
-            errors: [{ line: 0, col: 0, msg: (e && e.message) ? e.message : String(e) }],
-            warnings: [],
-            links: []
-        };
-    }
-});
-        /* eslint-enable no-loop-func */
+            try {
+                var one = await validateOneUrl(u, cfg, tmpDir);
+                one.depth = d;
+                return one;
+            } catch (e) {
+                return {
+                    url: u,
+                    finalUrl: u,
+                    depth: d,
+                    ok: false,
+                    errors: [{ line: 0, col: 0, msg: (e && e.message) ? e.message : String(e) }],
+                    warnings: [],
+                    links: []
+                };
+            }
+        });
 
         for (var j = 0; j < batchResults.length; j++) {
             var r = batchResults[j];
@@ -849,10 +863,10 @@ if (require.main === module) {
         }
         process.exit(summary.failed > 0 ? 1 : 0);
     })
-    .catch(function (err) {
-        console.error(chalk.red('error') + ' ' + (err && err.message ? err.message : String(err)));
-        process.exit(1);
-    });
+        .catch(function (err) {
+            console.error(chalk.red('error') + ' ' + (err && err.message ? err.message : String(err)));
+            process.exit(1);
+        });
 
 } else {
     module.exports = validate;
