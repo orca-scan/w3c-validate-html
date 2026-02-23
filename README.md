@@ -76,7 +76,7 @@ const validate = require('w3c-validate-html');
 })();
 ```
 
-### Validate a raw HTML string
+### Validate a HTML string
 
 ```js
 const validate = require('w3c-validate-html');
