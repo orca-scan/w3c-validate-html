@@ -1,12 +1,12 @@
-yarn install
-
 # w3c-validate-html
 
-[![Tests](https://github.com/orca-scan/w3c-validate-html/actions/workflows/ci.yml/badge.svg)](https://github.com/orca-scan/w3c-validate-html/actions) [![license](https://img.shields.io/github/license/orca-scan/w3c-validate-html.svg)](LICENSE)
+[![Tests](https://github.com/orca-scan/w3c-validate-html/actions/workflows/ci.yml/badge.svg)](https://github.com/orca-scan/w3c-validate-html/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/orca-scan/w3c-validate-html)](https://github.com/orca-scan/w3c-validate-html/blob/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/w3c-validate-html)](https://www.npmjs.com/package/w3c-validate-html)
 
 Validate HTML offline using the official W3C vnu.jar
 
-Why? Modern build tools and frameworks can introduce subtle HTML bugs. `w3c-validate-html` runs locally and prints concise, clickable errors with line numbers using the same rules as the online W3C validator, but entirely offline.
+**Why?** Modern build tools and frameworks can introduce subtle HTML bugs. `w3c-validate-html` runs locally and prints concise, clickable errors with line numbers using the same rules as the online W3C validator, but entirely offline.
 
 ---
 
