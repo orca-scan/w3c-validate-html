@@ -115,6 +115,45 @@ const validate = require('w3c-validate-html');
 }
 ```
 
+## GitHub Action
+
+```yaml
+name: html-validate
+on: [push, pull_request]
+
+jobs:
+  html-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - name: start server
+        run: npm start &
+      
+      - name: wait for server
+        run: |
+          for i in {1..30}; do
+            curl -fsS http://localhost:8080 >/dev/null && exit 0
+            sleep 1
+          done
+          echo "server did not start" >&2
+          exit 1
+
+      - name: validate html
+        run: npx w3c-validate-html --url http://localhost:8080 --depth 2 --concurrency 4 --warnings 0 --json > html-report.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: html-report.json
+```
+
 ## License
 
 [MIT License](LICENSE) © Orca Scan - a [barcode app](https://orcascan.com) with simple [barcode tracking APIs](https://orcascan.com/guides?tag=for-developers).
