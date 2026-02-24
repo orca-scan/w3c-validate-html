@@ -114,7 +114,7 @@ validate(html).then(function(result) {
 
 ## GitHub Action
 
-Add this workflow to validate your site's HTML on every push and pull request. It installs deps, starts your site with npm start, waits for http://localhost:8080, then crawls internal links up to `--depth 3` and fails the job if any pages have HTML errors. A `html-report.json` artifact is uploaded for review.
+You can use this in your CI as a Github Action to validate your site's HTML on every push and pull request. The job fails if any pages have HTML errors and a `html-report.json` artifact is uploaded for review.
 
 ```yaml
 name: html-validate
