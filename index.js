@@ -939,10 +939,9 @@ if (require.main === module) {
     var argv = minimist(process.argv.slice(2), {
         string: ['target', 'url', 'exclude', 'user-agent'],
         boolean: ['errors-only', 'json', 'same-origin', 'strip-query'],
-        alias: { t: 'target', u: 'url', e: 'errors-only' },
+        alias: { t: 'target', e: 'errors-only' },
         default: {
             target: '',
-            url: '',
             depth: 2,
             concurrency: 4,
             warnings: 1,
@@ -955,11 +954,10 @@ if (require.main === module) {
         }
     });
 
-    var target = argv.url || argv.target;
+    var target = argv.target;
 
     if (!target) {
-        console.error('usage: w3c-validate-html --url <https://site/> [--depth 2] [--concurrency 4] [--warnings 0|1] [--exclude "foo,bar"] [--same-origin] [--strip-query] [--errors-only] [--json]');
-        console.error('   or: w3c-validate-html --target <file|folder> [--warnings 0|1] [--errors-only] [--json]');
+        console.error('usage: w3c-validate-html --target <file|folder|url> [--depth 2] [--concurrency 4] [--warnings 0|1] [--exclude "foo,bar"] [--same-origin] [--strip-query] [--errors-only] [--json]');
         process.exit(1);
     }
 

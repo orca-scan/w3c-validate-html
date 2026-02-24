@@ -14,7 +14,7 @@ The easiest way to use this is from the CLI using `npx`, for example:
 
 ```sh
 # validate a website recursively (default depth 2)
-npx w3c-validate-html --url https://example.com --depth 1 --errors-only
+npx w3c-validate-html --target https://example.com --depth 1 --errors-only
 
 # Validate a folder, fail only on errors
 npx w3c-validate-html --target ./public --errors-only
@@ -23,9 +23,8 @@ npx w3c-validate-html --target ./public --errors-only
 ### Options
 
 Option        | Alias | Type    | Default            | Description
-:-------------|:------|:--------|:-------------------|:-------------------------------------
---url         | -u    | string  |                    | Start URL for website validation
---target      | -t    | string  |                    | File or folder to validate
+:-------------|:------|:--------|:-------------------|:---------------------------------------
+--target      | -t    | string  |                    | File, folder, URL or string to validate
 --depth       |       | number  | 2                  | Crawl depth for website validation
 --concurrency |       | number  | 4                  | Number of concurrent validations
 --warnings    |       | number  | 1                  | Show warnings (0 = off, 1 = on)
