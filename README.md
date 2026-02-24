@@ -13,8 +13,8 @@ Validate HTML offline using the official W3C vnu.jar
 The easiest way to use this is from the CLI using `npx`, for example:
 
 ```sh
-# Validate a website recursively (default depth 2)
-npx w3c-validate-html --url https://example.com --depth 1 --concurrency 2
+# validate a website recursively (default depth 2)
+npx w3c-validate-html --url https://example.com --depth 1 --errors-only
 
 # Validate a folder, fail only on errors
 npx w3c-validate-html --target ./public --errors-only
@@ -28,7 +28,7 @@ Option        | Alias | Type    | Default            | Description
 --target      | -t    | string  |                    | File or folder to validate
 --depth       |       | number  | 2                  | Crawl depth for website validation
 --concurrency |       | number  | 4                  | Number of concurrent validations
---warnings    |       | 0\|1    | 1                  | Show warnings (0 = off, 1 = on)
+--warnings    |       | number  | 1                  | Show warnings (0 = off, 1 = on)
 --exclude     |       | string  |                    | Comma/space separated URLs to exclude
 --errors-only | -e    | boolean | false              | Only show errors
 --json        |       | boolean | false              | Output results as JSON
@@ -38,9 +38,7 @@ Option        | Alias | Type    | Default            | Description
 
 ## Output
 
-Errors and warnings are printed with clickable file:line:col references for easy navigation in editors. Downloaded HTML is prettified for readability. Exits with code 1 if validation fails.
-
-Example output:
+Errors and warnings include clickable file:line:col links for quick editor navigation.
 
 ```
   ✖ public/invalid.html
@@ -52,17 +50,19 @@ Example output:
 
 ## Node module
 
-You can use this package as a module to validate a URL, file/folder, or raw HTML string:
+You can use this package as a node module to validate a URL, file/folder, or raw HTML string:
 
 ### Validate a URL
 
 ```js
 const validate = require('w3c-validate-html');
 
-(async () => {
-  const summary = await validate('https://example.com', { warnings: 1, depth: 0 });
-  console.log(summary);
-})();
+validate('https://example.com', { warnings: 1, depth: 0 }).then(function(summary) {
+    console.log(summary);
+})
+.catch((err) => {
+    console.error(err);
+});
 ```
 
 ### Validate a local file or folder
@@ -70,10 +70,12 @@ const validate = require('w3c-validate-html');
 ```js
 const validate = require('w3c-validate-html');
 
-(async () => {
-  const summary = await validate('./tests/fixtures/valid.html', { warnings: 1 });
-  console.log(summary);
-})();
+validate('./tests/fixtures/valid.html', { warnings: 1 }).then(function(summary) {
+    console.log(summary);
+})
+.catch((err) => {
+    console.error(err);
+});
 ```
 
 ### Validate a HTML string
@@ -81,21 +83,17 @@ const validate = require('w3c-validate-html');
 ```js
 const validate = require('w3c-validate-html');
 
-(async () => {
-  const html = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hi</h1></body></html>';
-  const result = await validate(html);
-  console.log(result);
-  // {
-  //   passed: 1,
-  //   failed: 0,
-  //   results: [
-  //     { ok: true, errors: [], warnings: [] }
-  //   ]
-  // }
-})();
+var html = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hi</h1></body></html>';
+
+validate(html).then(function(result) {
+    console.log(result);
+})
+.catch((err) => {
+    console.error(err);
+});
 ```
 
-### Example response (invalid HTML file)
+### Example response
 
 ```json
 {
@@ -126,27 +124,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - run: npm ci
+      - run: npm start &
 
-      - name: start server
-        run: npm start &
-      
-      - name: wait for server
-        run: |
+      - run: |
           for i in {1..30}; do
-            curl -fsS http://localhost:8080 >/dev/null && exit 0
+            curl -fsS http://localhost:8080 >/dev/null && break
             sleep 1
           done
-          echo "server did not start" >&2
-          exit 1
 
-      - name: validate html
-        run: npx w3c-validate-html --url http://localhost:8080 --depth 2 --concurrency 4 --warnings 0 --json > html-report.json
+      - run: npx w3c-validate-html --url http://localhost:8080 --depth 3 --concurrency 4 --errors-only --json > html-report.json
 
       - uses: actions/upload-artifact@v4
         with:
