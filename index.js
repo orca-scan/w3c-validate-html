@@ -154,14 +154,49 @@ function toList(v) {
  */
 function toSafeName(href) {
     var s = String(href || '');
+    var out = '';
+    var i;
+    var ch;
+
     s = s.replace(/^https?:\/\//i, '');
-    s = s.replace(/[?#].*$/, '');
     s = s.replace(/\/+/g, '/');
-    s = s.replace(/[^a-z0-9/._-]+/gi, '_');
-    s = s.replace(/\//g, '_');
-    if (!s) { s = 'index.html'; }
-    if (!/\.html?$/i.test(s)) { s += '.html'; }
-    return s;
+
+    /* convert url chars to filename safe chars without stripping query */
+    for (i = 0; i < s.length; i++) {
+        ch = s.charAt(i);
+
+        /* keep common safe chars */
+        if (/[a-z0-9]/i.test(ch) || ch === '/' || ch === '.' || ch === '_' || ch === '-') {
+            out += ch;
+        }
+        /* map separators to readable tokens */
+        else if (ch === '?') {
+            out += '__q__';
+        }
+        else if (ch === '&') {
+            out += '__and__';
+        }
+        else if (ch === '=') {
+            out += '__eq__';
+        }
+        else if (ch === '#') {
+            out += '__hash__';
+        }
+        /* everything else becomes underscore */
+        else {
+            out += '_';
+        }
+    }
+
+    out = out.replace(/\/+/g, '/');
+    out = out.replace(/_+/g, '_');
+    out = out.replace(/\//g, '_');
+    out = out.replace(/^_+|_+$/g, '');
+
+    if (!out) { out = 'index.html'; }
+    if (!/\.html?$/i.test(out)) { out += '.html'; }
+
+    return out;
 }
 
 /**
