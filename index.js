@@ -1035,11 +1035,25 @@ if (require.main === module) {
         userAgent: argv['user-agent']
     };
 
+    const startTime = Date.now();
     validate(target, cfg).then(function (summary) {
         if (argv.json) {
             try { console.log(JSON.stringify(summary)); }
             catch (e) { console.error('{"error":"failed to stringify results"}'); }
         }
+
+        // Jasmine-style summary (simplified)
+        const total = summary.passed + summary.failed;
+        const duration = ((Date.now() - startTime) / 1000).toFixed(3);
+        console.log('\nSummary:');
+        if (summary.failed === 0) {
+            console.log('\n👊  Passed');
+        } else {
+            console.log('\n❌  Failed');
+        }
+        console.log('Pages:   ' + summary.passed + ' of ' + total);
+        console.log('Errors:  ' + summary.failed);
+        console.log('Finished in ' + duration + ' seconds');
         process.exit(summary.failed > 0 ? 1 : 0);
     })
     .catch(function (err) {
