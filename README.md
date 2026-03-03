@@ -124,21 +124,14 @@ jobs:
   html-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - run: npm ci
-      - run: npm start &
-
-      - run: |
-          for i in {1..30}; do
-            curl -fsS http://localhost:8080 >/dev/null && break
-            sleep 1
-          done
-
-      - run: npx w3c-validate-html --url http://localhost:8080 --depth 3 --concurrency 4 --errors-only --json > html-report.json
+      - name: validate url
+        env:
+          TARGET_URL: https://example.com
+        run: npx w3c-validate-html --target "$TARGET_URL" --depth 2 --errors-only --json > html-report.json
 
       - uses: actions/upload-artifact@v4
         with:
