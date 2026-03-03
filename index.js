@@ -424,6 +424,15 @@ function isCrawlable(href, cfg, origin) {
         return false;
     }
 
+    // skip common non-HTML file types (e.g., pdf, zip, docx, etc)
+    if (/\.(pdf|zip|docx?|xlsx?|pptx?|jpg|jpeg|png|gif|svg|mp3|mp4|avi|mov|wmv|exe|dmg|tar|gz|rar|7z)(\?|#|$)/i.test(href)) {
+        return false;
+    }
+    // skip links that look like downloads
+    if (/download(=|\b|\/|\.)|attachment(=|\b|\/|\.)|file(=|\b|\/|\.)/i.test(href)) {
+        return false;
+    }
+
     if (cfg && cfg.sameOrigin) {
         try {
             if (new URL(href).origin !== origin) {
@@ -465,6 +474,12 @@ async function fetchHtml(pageUrl, cfg) {
 
     if (!res.ok) {
         throw new Error('request failed ' + res.status + ' ' + pageUrl);
+    }
+
+    // Only process HTML or XHTML
+    var contentType = res.headers.get('content-type') || '';
+    if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) {
+        return null;
     }
 
     var finalUrl = (res.url && String(res.url)) ? String(res.url) : pageUrl;
@@ -595,7 +610,19 @@ async function asyncPool(items, concurrency, worker) {
  * @returns {Promise<{url:string,ok:boolean,errors:Array,warnings:Array,finalUrl:string,links:Array}>} - Result
  */
 async function validateOneUrl(pageUrl, cfg, tmpDir) {
+
     var fetched = await fetchHtml(pageUrl, cfg);
+    if (!fetched) {
+        // Not HTML, skip crawling and validation
+        return {
+            url: pageUrl,
+            finalUrl: pageUrl,
+            ok: true,
+            errors: [],
+            warnings: [],
+            links: []
+        };
+    }
     var finalUrl = fetched.finalUrl;
     var html = fetched.html;
 
@@ -1008,11 +1035,25 @@ if (require.main === module) {
         userAgent: argv['user-agent']
     };
 
+    const startTime = Date.now();
     validate(target, cfg).then(function (summary) {
         if (argv.json) {
             try { console.log(JSON.stringify(summary)); }
             catch (e) { console.error('{"error":"failed to stringify results"}'); }
         }
+
+        // Jasmine-style summary (simplified)
+        const total = summary.passed + summary.failed;
+        const duration = ((Date.now() - startTime) / 1000).toFixed(3);
+        console.log('\nSummary:');
+        if (summary.failed === 0) {
+            console.log('\n👊  Passed');
+        } else {
+            console.log('\n❌  Failed');
+        }
+        console.log('Pages:   ' + summary.passed + ' of ' + total);
+        console.log('Errors:  ' + summary.failed);
+        console.log('Finished in ' + duration + ' seconds');
         process.exit(summary.failed > 0 ? 1 : 0);
     })
     .catch(function (err) {
